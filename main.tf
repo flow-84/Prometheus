@@ -1,13 +1,11 @@
 provider "aws" {
   region     = "eu-central-1"
-  profile    = "student" # Ersetzen Sie dies durch Ihre Region
-  access_key = "ASIAVEEYQMUKGAXLPBXL" # Ersetzen Sie dies durch Ihren Access Key
-  secret_key = "pXdT1BBh1zLTbaBPCpae7RHw7agt482XSAnN3VUy" # Ersetzen Sie dies durch Ihren Secret Key
+  profile    = "student" # Ersetzen Sie dies durch Ihren Secret Key
 }
 
 resource "aws_key_pair" "deployer" {
-  key_name   = "terraform-deployer"
-  public_key = file("/mnt/c/Users/rajam/123.pem") # Ersetzen Sie dies durch Ihren Key-Pfad
+  key_name   = "deployer-key"
+  public_key = file("~/123.pub") # Ersetzen Sie dies durch Ihren Key-Pfad
 }
 
 resource "aws_security_group" "prometheus_sg" {
@@ -25,7 +23,7 @@ resource "aws_security_group" "prometheus_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["91.9.14.150"] # Ersetzen Sie dies durch Ihre IP-Adresse
+    cidr_blocks = ["91.9.14.150/32"] # Ersetzen Sie dies durch Ihre IP-Adresse
   }
 
   ingress {

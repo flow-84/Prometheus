@@ -1,0 +1,67 @@
+---
+- hosts: prometheus_server
+  become: true
+  tasks:
+    - name: Create Prometheus user
+      user:
+        name: prometheus
+        shell: /bin/false
+        create_home: yes
+
+    - name: Download and install Prometheus
+      block:
+        - name: Download Prometheus tarball
+          get_url:
+            url: https://github.com/prometheus/prometheus/releases/download/v2.47.2/prometheus-2.47.2.linux-amd64.tar.gz
+            dest: /tmp/prometheus.tar.gz
+
+        - name: Extract Prometheus tarball
+          unarchive:
+            src: /tmp/prometheus.tar.gz
+            dest: /home/prometheus
+            remote_src: yes
+
+        - name: Copy Prometheus configuration file
+          template:
+            src: templates/prometheus.yml.j2
+            dest: /home/prometheus/prometheus-2.47.2.linux-amd64/prometheus.yml
+
+        - name: Start Prometheus
+          shell: nohup /home/prometheus/prometheus-2.47.2.linux-amd64/prometheus --config.file=/home/prometheus/prometheus-2.47.2.linux-amd64/prometheus.yml &
+
+- hosts: node_server
+  become: true
+  tasks:
+    - name: Download and install Node Exporter
+      block:
+        - name: Download Node Exporter tarball
+          get_url:
+            url: https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+            dest: /tmp/node_exporter.tar.gz
+
+        - name: Extract Node Exporter tarball
+          unarchive:
+            src: /tmp/node_exporter.tar.gz
+            dest: /usr/local/bin
+            remote_src: yes
+            creates: /usr/local/bin/node_exporter-1.6.1.linux-amd64
+
+        - name: Create a systemd service file for Node Exporter
+          copy:
+            dest: /etc/systemd/system/node_exporter.service
+            content: |
+              [Unit]
+              Description=Node Exporter
+
+              [Service]
+              User=root
+              ExecStart=/usr/local/bin/node_exporter-1.6.1.linux-amd64/node_exporter
+
+              [Install]
+              WantedBy=default.target
+
+        - name: Start Node Exporter service
+          systemd:
+            name: node_exporter
+            enabled: yes
+            state: started
